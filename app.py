@@ -2,13 +2,13 @@
 import streamlit as st
 import pandas as pd
 from io import BytesIO
+import random
 
 st.set_page_config(page_title="Ürün Açıklama Otomatı", layout="centered")
-
 st.title("☕ Ürün Açıklama Otomatı")
-st.write("Excel dosyanı yükle, biz senin için <strong>HTML formatında</strong>, <strong>SEO uyumlu</strong> ve <strong>pazarlama dilinde</strong> ürün açıklamaları oluşturalım!", unsafe_allow_html=True)
+st.write("Excel dosyanı yükle, <strong>ürüne uygun</strong>, <strong>HTML formatında</strong> ve <strong>SEO dostu</strong> açıklamalar oluşturalım!", unsafe_allow_html=True)
 
-def generate_seo_html_description(row):
+def generate_unique_description(row):
     def clean(value):
         return str(value).strip() if pd.notna(value) and str(value).strip().lower() != "nan" else ""
 
@@ -22,40 +22,46 @@ def generate_seo_html_description(row):
     lock = "emniyet kilidi" if "Var" in clean(row.get("Emniyet klidi")) else ""
     light = "uyarı ışığı" if "Var" in clean(row.get("Uyarı ışığı")) else ""
 
-    parts = []
+    body = []
 
     if name:
-        intro = f"<strong>{name}</strong>, "
-    else:
-        intro = ""
+        body.append(f"<strong>{name}</strong>")
 
     if power:
-        parts.append(f"<span>{power} gücüyle</span> kısa sürede kahve hazırlamanızı sağlar")
+        body.append(f"<span>{power} gücü</span> ile kahvenizi ideal sıcaklıkta hazırlar")
 
     if cups:
-        parts.append(f"<span>{cups} fincan kapasitesi</span> ile kalabalık sofralara hitap eder")
+        cups_text = random.choice([
+            f"<span>{cups} fincan kapasitesi</span> ile ideal miktarda servis yapar",
+            f"Tek seferde <span>{cups} fincan</span> kahve hazırlama imkanı sunar"
+        ])
+        body.append(cups_text)
 
-    safety = []
-    if auto_off: safety.append(auto_off)
-    if sound_alert: safety.append(sound_alert)
-    if safety:
-        parts.append(f"{' ve '.join(safety).capitalize()}, <span>güvenli ve pratik kullanım</span> sunar")
+    if auto_off or sound_alert:
+        safety_features = []
+        if auto_off: safety_features.append(auto_off)
+        if sound_alert: safety_features.append(sound_alert)
+        body.append(", ".join(safety_features).capitalize() + " ile güvenli kullanım sağlar")
 
     if color:
-        parts.append(f"<span>{color} tasarımı</span> ile mutfağınıza estetik katar")
+        body.append(f"<span>{color} tasarımı</span> mutfağınıza uyum sağlar")
 
-    control = []
-    if lock: control.append(lock)
-    if light: control.append(light)
-    if control:
-        parts.append(f"{' ve '.join(control).capitalize()} sayesinde <span>kullanım kolaylığı</span> sağlar")
+    if lock or light:
+        security_features = []
+        if lock: security_features.append(lock)
+        if light: security_features.append(light)
+        body.append(", ".join(security_features).capitalize() + " ile kullanım kolaylığı sunar")
 
-    if not parts:
-        return ""
+    # Açıklama cümlelerini çeşitlendirme
+    if body:
+        conclusion_options = [
+            "Türk kahvesi keyfinizi pratik ve şık bir deneyime dönüştürür.",
+            "Kahve hazırlamayı konforlu hale getirir.",
+            "Geleneksel lezzeti modern teknolojiyle buluşturur."
+        ]
+        body.append(f"<em>{random.choice(conclusion_options)}</em>")
 
-    html = f"{intro}" + ". ".join(parts) + ". <em>Şık tasarımı ve fonksiyonel yapısıyla mutfağınızın vazgeçilmezi olmaya aday.</em>"
-
-    return html
+    return ". ".join(body) if body else ""
 
 def to_excel(df):
     output = BytesIO()
@@ -67,20 +73,18 @@ uploaded_file = st.file_uploader("📂 Excel dosyasını yükle (.xlsx)", type=[
 
 if uploaded_file:
     df = pd.read_excel(uploaded_file)
-    st.success("Dosya yüklendi! İçeriği aşağıda:")
+    st.success("Dosya yüklendi:")
     st.dataframe(df)
 
-    with st.spinner("Açıklamalar oluşturuluyor..."):
-        df["Ürün Açıklaması (HTML-SEO)"] = df.apply(generate_seo_html_description, axis=1)
+    with st.spinner("Açıklamalar yazılıyor..."):
+        df["Ürün Açıklaması (HTML-SEO)"] = df.apply(generate_unique_description, axis=1)
 
     st.success("✅ Açıklamalar oluşturuldu!")
-    st.markdown("📋 Aşağıda oluşturulan HTML açıklamaları yer almakta:")
-
     st.dataframe(df[["name [tr]", "Ürün Açıklaması (HTML-SEO)"]])
 
     excel_data = to_excel(df)
     st.download_button(
-        label="📥 HTML Açıklamaları Excel'e Aktar",
+        label="📥 HTML Açıklamaları İndir",
         data=excel_data,
         file_name="urun_aciklama_html_seo.xlsx",
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
