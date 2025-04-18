@@ -6,9 +6,9 @@ from io import BytesIO
 st.set_page_config(page_title="Ürün Açıklama Otomatı", layout="centered")
 
 st.title("☕ Ürün Açıklama Otomatı")
-st.write("Excel dosyanı yükle, biz senin için <strong>okuyucunun dikkatini çeken</strong> e-ticaret uyumlu ürün açıklamaları oluşturalım!", unsafe_allow_html=True)
+st.write("Excel dosyanı yükle, biz senin için <strong>HTML formatında</strong>, <strong>SEO uyumlu</strong> ve <strong>pazarlama dilinde</strong> ürün açıklamaları oluşturalım!", unsafe_allow_html=True)
 
-def generate_marketing_description(row):
+def generate_seo_html_description(row):
     def clean(value):
         return str(value).strip() if pd.notna(value) and str(value).strip().lower() != "nan" else ""
 
@@ -22,33 +22,40 @@ def generate_marketing_description(row):
     lock = "emniyet kilidi" if "Var" in clean(row.get("Emniyet klidi")) else ""
     light = "uyarı ışığı" if "Var" in clean(row.get("Uyarı ışığı")) else ""
 
-    body = []
+    parts = []
 
     if name:
-        body.append(f"{name} {power + ' gücüyle' if power else ''} kısa sürede lezzetli kahveler hazırlamanıza yardımcı olur.")
+        intro = f"<strong>{name}</strong>, "
+    else:
+        intro = ""
+
+    if power:
+        parts.append(f"<span>{power} gücüyle</span> kısa sürede kahve hazırlamanızı sağlar")
 
     if cups:
-        body.append(f"{cups} fincan kapasitesi sayesinde kalabalık sofralar için idealdir.")
+        parts.append(f"<span>{cups} fincan kapasitesi</span> ile kalabalık sofralara hitap eder")
 
-    if auto_off or sound_alert:
-        safety = []
-        if auto_off: safety.append(auto_off)
-        if sound_alert: safety.append(sound_alert)
-        body.append(f"{' ve '.join(safety).capitalize()}, güvenli ve zahmetsiz kullanım sunar.")
+    safety = []
+    if auto_off: safety.append(auto_off)
+    if sound_alert: safety.append(sound_alert)
+    if safety:
+        parts.append(f"{' ve '.join(safety).capitalize()}, <span>güvenli ve pratik kullanım</span> sunar")
 
     if color:
-        body.append(f"{color} rengi ve modern tasarımıyla mutfağınıza şıklık katar.")
+        parts.append(f"<span>{color} tasarımı</span> ile mutfağınıza estetik katar")
 
-    if lock or light:
-        control = []
-        if lock: control.append(lock)
-        if light: control.append(light)
-        body.append(f"{' ve '.join(control).capitalize()} ile kullanımda ekstra kontrol sağlar.")
+    control = []
+    if lock: control.append(lock)
+    if light: control.append(light)
+    if control:
+        parts.append(f"{' ve '.join(control).capitalize()} sayesinde <span>kullanım kolaylığı</span> sağlar")
 
-    if not body:
+    if not parts:
         return ""
 
-    return "\n\n".join(body)
+    html = f"{intro}" + ". ".join(parts) + ". <em>Şık tasarımı ve fonksiyonel yapısıyla mutfağınızın vazgeçilmezi olmaya aday.</em>"
+
+    return html
 
 def to_excel(df):
     output = BytesIO()
@@ -64,17 +71,17 @@ if uploaded_file:
     st.dataframe(df)
 
     with st.spinner("Açıklamalar oluşturuluyor..."):
-        df["Ürün Açıklaması (Pazarlama Dili)"] = df.apply(generate_marketing_description, axis=1)
+        df["Ürün Açıklaması (HTML-SEO)"] = df.apply(generate_seo_html_description, axis=1)
 
     st.success("✅ Açıklamalar oluşturuldu!")
-    st.markdown("📋 Aşağıda oluşturulan açıklamaları inceleyebilirsin:")
+    st.markdown("📋 Aşağıda oluşturulan HTML açıklamaları yer almakta:")
 
-    st.dataframe(df[["name [tr]", "Ürün Açıklaması (Pazarlama Dili)"]])
+    st.dataframe(df[["name [tr]", "Ürün Açıklaması (HTML-SEO)"]])
 
     excel_data = to_excel(df)
     st.download_button(
-        label="📥 Açıklamaları Excel'e Aktar",
+        label="📥 HTML Açıklamaları Excel'e Aktar",
         data=excel_data,
-        file_name="urun_aciklama_pazarlama.xlsx",
+        file_name="urun_aciklama_html_seo.xlsx",
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
