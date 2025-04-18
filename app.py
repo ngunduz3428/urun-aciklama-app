@@ -6,11 +6,11 @@ import random
 
 st.set_page_config(page_title="Ürün Açıklama Otomatı", layout="centered")
 st.title("☕ Ürün Açıklama Otomatı")
-st.write("Excel dosyanı yükle, <strong>ürüne uygun</strong>, <strong>HTML formatında</strong> ve <strong>SEO dostu</strong> açıklamalar oluşturalım!", unsafe_allow_html=True)
+st.write("Excel dosyanı yükle, <strong>yalnızca dolu alanlara göre</strong> <strong>SEO uyumlu</strong> ve <strong>HTML formatlı</strong> açıklamaları otomatik olarak oluştur!", unsafe_allow_html=True)
 
-def generate_unique_description(row):
-    def clean(value):
-        return str(value).strip() if pd.notna(value) and str(value).strip().lower() != "nan" else ""
+def generate_focused_html(row):
+    def clean(val):
+        return str(val).strip() if pd.notna(val) and str(val).strip().lower() != "nan" else ""
 
     name = clean(row.get("name [tr]"))
     power = clean(row.get("Güç"))
@@ -22,46 +22,43 @@ def generate_unique_description(row):
     lock = "emniyet kilidi" if "Var" in clean(row.get("Emniyet klidi")) else ""
     light = "uyarı ışığı" if "Var" in clean(row.get("Uyarı ışığı")) else ""
 
-    body = []
+    parts = []
 
     if name:
-        body.append(f"<strong>{name}</strong>")
+        parts.append(f"<strong>{name}</strong>")
 
     if power:
-        body.append(f"<span>{power} gücü</span> ile kahvenizi ideal sıcaklıkta hazırlar")
+        parts.append(f"<span>{power} gücü</span> ile ideal sıcaklıkta kahvenizi hazırlar")
 
     if cups:
-        cups_text = random.choice([
-            f"<span>{cups} fincan kapasitesi</span> ile ideal miktarda servis yapar",
-            f"Tek seferde <span>{cups} fincan</span> kahve hazırlama imkanı sunar"
-        ])
-        body.append(cups_text)
+        parts.append(f"<span>{cups} fincan kapasitesi</span> ile aynı anda servis kolaylığı sunar")
 
-    if auto_off or sound_alert:
-        safety_features = []
-        if auto_off: safety_features.append(auto_off)
-        if sound_alert: safety_features.append(sound_alert)
-        body.append(", ".join(safety_features).capitalize() + " ile güvenli kullanım sağlar")
+    safety = []
+    if auto_off: safety.append(auto_off)
+    if sound_alert: safety.append(sound_alert)
+    if safety:
+        parts.append(", ".join(safety).capitalize() + " ile güvenli ve rahat kullanım sağlar")
 
     if color:
-        body.append(f"<span>{color} tasarımı</span> mutfağınıza uyum sağlar")
+        parts.append(f"<span>{color} tasarımı</span> mutfağınıza modern bir dokunuş katar")
 
-    if lock or light:
-        security_features = []
-        if lock: security_features.append(lock)
-        if light: security_features.append(light)
-        body.append(", ".join(security_features).capitalize() + " ile kullanım kolaylığı sunar")
+    control = []
+    if lock: control.append(lock)
+    if light: control.append(light)
+    if control:
+        parts.append(", ".join(control).capitalize() + " ile kullanımda ekstra kontrol sağlar")
 
-    # Açıklama cümlelerini çeşitlendirme
-    if body:
-        conclusion_options = [
-            "Türk kahvesi keyfinizi pratik ve şık bir deneyime dönüştürür.",
-            "Kahve hazırlamayı konforlu hale getirir.",
-            "Geleneksel lezzeti modern teknolojiyle buluşturur."
-        ]
-        body.append(f"<em>{random.choice(conclusion_options)}</em>")
+    if not parts:
+        return ""
 
-    return ". ".join(body) if body else ""
+    conclusion = random.choice([
+        "Türk kahvesi keyfini teknolojiyle buluşturan ideal bir seçimdir.",
+        "Kahve deneyiminizi modernleştiren akıllı bir çözümdür.",
+        "Geleneksel lezzeti fonksiyonel detaylarla sunar."
+    ])
+
+    html = ". ".join(parts) + f". <em>{conclusion}</em>"
+    return html
 
 def to_excel(df):
     output = BytesIO()
@@ -77,7 +74,7 @@ if uploaded_file:
     st.dataframe(df)
 
     with st.spinner("Açıklamalar yazılıyor..."):
-        df["Ürün Açıklaması (HTML-SEO)"] = df.apply(generate_unique_description, axis=1)
+        df["Ürün Açıklaması (HTML-SEO)"] = df.apply(generate_focused_html, axis=1)
 
     st.success("✅ Açıklamalar oluşturuldu!")
     st.dataframe(df[["name [tr]", "Ürün Açıklaması (HTML-SEO)"]])
